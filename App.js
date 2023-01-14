@@ -4,6 +4,7 @@ import {Component} from "react";
 import LocationHeader from "./LocationHeader";
 import { Provider as PaperProvider } from 'react-native-paper';
 import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
+import {getForecast, toGrid} from "./WeatherAPI";
 
 
 class App extends Component {
@@ -11,10 +12,12 @@ class App extends Component {
         super(props);
 
         this.setStateFromKey = this.setStateFromKey.bind(this);
+        this.fetchWeather = this.fetchWeather.bind(this);
 
         this.state = {
             lat: "",
-            lon: ""
+            lon: "",
+            text: ""
         };
     }
 
@@ -25,13 +28,39 @@ class App extends Component {
         });
     }
 
+    async fetchWeather() {
+        let lat = parseFloat(this.state.lat);
+        let lon = parseFloat(this.state.lon);
+        if (isNaN(lat) || isNaN(lon)) {
+            this.setStateFromKey("error", "Latitude and/or Longitude aren't numbers!");
+            return;
+        }
+
+        let gridPos = await toGrid(lat, lon);
+        if (gridPos === null) {
+            this.setStateFromKey("error", "Couldn't fetch grid position! Do you have network connectivity?");
+            return;
+        }
+
+        let forecast = await getForecast(gridPos[0], gridPos[1], gridPos[2]);
+        let cast = "";
+        for (let f of forecast) {
+            cast += f.detailedForecast + "\n";
+        }
+
+        this.setStateFromKey("text", cast);
+
+
+    }
+
     render() {
         return (
             <SafeAreaProvider>
                 <SafeAreaView style={styles.container}>
                     <PaperProvider>
-                        <LocationHeader setStateFromKey={this.setStateFromKey} lat={this.state.lat} lon={this.state.lon}/>
-                        <Text>Open up App.js to start working on your app!</Text>
+                        <LocationHeader setStateFromKey={this.setStateFromKey} lat={this.state.lat} lon={this.state.lon}
+                            fetchWeather={this.fetchWeather}/>
+                        <Text>{this.state.text}</Text>
                         <StatusBar style="auto"/>
                     </PaperProvider>
                 </SafeAreaView>

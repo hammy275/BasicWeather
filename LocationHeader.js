@@ -11,6 +11,7 @@ import {getCurrentPositionAsync, requestForegroundPermissionsAsync, useForegroun
  * setStateFromKey: Sets the state for a given key-value pair in App
  * lat: Latitude
  * lon: Longitude
+ * fetchWeather: fetchWeather function
  */
 class LocationHeader extends Component {
     render() {
@@ -36,12 +37,17 @@ class LocationHeader extends Component {
                       let position = await getCurrentPositionAsync();
                       this.props.setStateFromKey("lat", position.coords.latitude.toString());
                       this.props.setStateFromKey("lon", position.coords.longitude.toString());
+                      this.props.fetchWeather();
                   } catch {
                       this.props.setStateFromKey("error", "Couldn't get location! Did you give permission?");
                   }
 
               }
               }
+              />
+              <IconButton
+              icon="refresh"
+              onPress={this.props.fetchWeather}
               />
           </View>
         );
