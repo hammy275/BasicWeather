@@ -30,7 +30,7 @@ Example period entry:
  */
 async function getForecast(office, gridX, gridY) {
     try {
-        const response = await fetch("https://api.weather.gov/gridpoints/" + office + "/" + gridX + "," + gridY + "/forecast");
+        const response = await fetch("https://api.weather.gov/gridpoints/" + office + "/" + gridX + "," + gridY + "/forecast", {headers: HEADERS});
         const data = await response.json();
         return data.properties.periods;
     } catch (e) {

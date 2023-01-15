@@ -1,10 +1,10 @@
-import { StatusBar } from 'expo-status-bar';
-import {StyleSheet, Text, View} from 'react-native';
+import {Appearance, FlatList, StyleSheet} from 'react-native';
 import {Component} from "react";
 import LocationHeader from "./LocationHeader";
-import { Provider as PaperProvider } from 'react-native-paper';
+import {Provider as PaperProvider, MD3LightTheme, MD3DarkTheme} from 'react-native-paper';
 import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
 import {getForecast, toGrid} from "./WeatherAPI";
+import WeatherDescription from "./WeatherDescription";
 
 
 class App extends Component {
@@ -14,10 +14,14 @@ class App extends Component {
         this.setStateFromKey = this.setStateFromKey.bind(this);
         this.fetchWeather = this.fetchWeather.bind(this);
 
+        Appearance.addChangeListener(() => {
+            this.forceUpdate();
+        });
+
         this.state = {
             lat: "",
             lon: "",
-            text: ""
+            forecasts: []
         };
     }
 
@@ -42,28 +46,26 @@ class App extends Component {
             return;
         }
 
-        let forecast = await getForecast(gridPos[0], gridPos[1], gridPos[2]);
-        let cast = "";
-        for (let f of forecast) {
-            cast += f.detailedForecast + "\n";
-        }
+        let forecasts = await getForecast(gridPos[0], gridPos[1], gridPos[2]);
+        this.setStateFromKey("forecasts", forecasts);
 
-        this.setStateFromKey("text", cast);
 
 
     }
 
     render() {
+        const theme = Appearance.getColorScheme() === "dark" ? MD3DarkTheme : MD3LightTheme;
         return (
             <SafeAreaProvider>
-                <SafeAreaView style={styles.container}>
-                    <PaperProvider>
+                <PaperProvider>
+                    <SafeAreaView style={[styles.container, {backgroundColor: theme.colors.background}]}>
                         <LocationHeader setStateFromKey={this.setStateFromKey} lat={this.state.lat} lon={this.state.lon}
-                            fetchWeather={this.fetchWeather}/>
-                        <Text>{this.state.text}</Text>
-                        <StatusBar style="auto"/>
-                    </PaperProvider>
-                </SafeAreaView>
+                                        fetchWeather={this.fetchWeather}/>
+                        <FlatList data={this.state.forecasts} renderItem={(data) => {
+                            return <WeatherDescription period={data.item}/>
+                        }}/>
+                    </SafeAreaView>
+                </PaperProvider>
             </SafeAreaProvider>
         );
     }
@@ -72,7 +74,6 @@ class App extends Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
   },
