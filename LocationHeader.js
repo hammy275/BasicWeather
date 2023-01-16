@@ -1,8 +1,18 @@
 import {Component} from "react";
-import {View} from "react-native";
+import {View, PermissionsAndroid, Platform} from "react-native";
 import {IconButton, TextInput} from "react-native-paper";
-import * as Location from 'expo-location';
-import {getCurrentPositionAsync, requestForegroundPermissionsAsync, useForegroundPermissions} from "expo-location";
+import Geolocation from "react-native-geolocation-service"
+
+// Returns a Promise, so we can async it without callbacks.
+async function getLocation() {
+    return new Promise((resolve, reject) => {
+        Geolocation.getCurrentPosition((success) => {
+            resolve(success);
+        }, (error) => {
+            reject(error);
+        });
+    });
+}
 
 
 /**
@@ -33,8 +43,30 @@ class LocationHeader extends Component {
               icon="crosshairs-gps"
               onPress={async () => {
                   try {
-                      await requestForegroundPermissionsAsync();
-                      let position = await getCurrentPositionAsync();
+                      if (Platform.OS === "android") {
+                          let hasPermission = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
+                          if (!hasPermission) {
+                              let permissionResult = await PermissionsAndroid.request(
+                                  PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+                                  {
+                                      title: "BasicWeather Location Permission",
+                                      message:
+                                          "We need access to your location to retrieve weather for your location!",
+                                      buttonNeutral: "Ask Me Later",
+                                      buttonNegative: "Cancel",
+                                      buttonPositive: "Ok",
+                                  },
+                              );
+                              if (permissionResult !== PermissionsAndroid.RESULTS.GRANTED) {
+                                  throw "No Permission!";
+                              }
+                          }
+                      } else if (Platform.OS === "ios") {
+                          // iOS untested due to no iOS testing being done on this app.
+                          await Geolocation.requestAuthorization("whenInUse");
+                      }
+
+                      let position = await getLocation();
                       this.props.setStateFromKey("lat", position.coords.latitude.toString());
                       this.props.setStateFromKey("lon", position.coords.longitude.toString());
                       this.props.fetchWeather();
