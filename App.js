@@ -6,6 +6,7 @@ import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
 import {getForecast, toGrid} from "./WeatherAPI";
 import WeatherDescription from "./WeatherDescription";
 import ErrorFooter from "./ErrorFooter";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 class App extends Component {
@@ -15,6 +16,7 @@ class App extends Component {
         this.setStateFromKey = this.setStateFromKey.bind(this);
         this.fetchWeather = this.fetchWeather.bind(this);
         this.clearLoading = this.clearLoading.bind(this);
+        this.loadFromStorage = this.loadFromStorage.bind(this);
 
         Appearance.addChangeListener(() => {
             this.forceUpdate();
@@ -27,6 +29,28 @@ class App extends Component {
             forecasts: [],
             loadProgress: 0
         };
+
+        this.loadFromStorage();
+    }
+
+    async loadFromStorage() {
+        try {
+            let lat = await AsyncStorage.getItem("lat");
+            let lon = await AsyncStorage.getItem("lon");
+            if (lat !== null) {
+                this.setStateFromKey("lat", lat);
+            }
+            if (lon !== null) {
+                this.setStateFromKey("lon", lon);
+            }
+
+            if (lat !== null && lon !== null) {
+                await this.fetchWeather();
+            }
+        } catch {
+            this.setStateFromKey("error", "Failed to retrieve past data from storage!");
+        }
+
     }
 
     setStateFromKey(key, value) {
@@ -75,6 +99,14 @@ class App extends Component {
         this.setStateFromKey("forecasts", forecasts);
         this.setStateFromKey("loadProgress", 1.0);
         this.clearLoading();
+
+        // Save lat and lon to storage if we successfully grab the weather using them
+        await this.saveLatLonToStorage(this.state.lat, this.state.lon);
+    }
+
+    async saveLatLonToStorage(lat, lon) {
+        await AsyncStorage.setItem("lat", lat);
+        await AsyncStorage.setItem("lon", lon);
     }
 
     render() {
