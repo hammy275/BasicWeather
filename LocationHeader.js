@@ -22,6 +22,7 @@ async function getLocation() {
  * lat: Latitude
  * lon: Longitude
  * fetchWeather: fetchWeather function
+ * onInfo: onInfo function
  */
 class LocationHeader extends Component {
     render() {
@@ -84,8 +85,8 @@ class LocationHeader extends Component {
                 }
             />
             <IconButton
-                icon="refresh"
-                onPress={this.props.fetchWeather}
+                icon="information-outline"
+                onPress={this.props.onInfo}
             />
         </View>
         );

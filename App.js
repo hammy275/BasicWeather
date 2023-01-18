@@ -1,7 +1,7 @@
-import {Appearance, FlatList, StyleSheet} from 'react-native';
+import {Appearance, FlatList, RefreshControl, StyleSheet, View} from 'react-native';
 import {Component} from "react";
 import LocationHeader from "./LocationHeader";
-import {Provider as PaperProvider, MD3LightTheme, MD3DarkTheme} from 'react-native-paper';
+import {Provider as PaperProvider, MD3LightTheme, MD3DarkTheme, Modal, Portal, Text} from 'react-native-paper';
 import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
 import {getForecast, toGrid} from "./WeatherAPI";
 import WeatherDescription from "./WeatherDescription";
@@ -17,6 +17,8 @@ class App extends Component {
         this.fetchWeather = this.fetchWeather.bind(this);
         this.clearLoading = this.clearLoading.bind(this);
         this.loadFromStorage = this.loadFromStorage.bind(this);
+        this.refetchWeather = this.refetchWeather.bind(this);
+        this.onInfo = this.onInfo.bind(this);
 
         Appearance.addChangeListener(() => {
             this.forceUpdate();
@@ -27,7 +29,9 @@ class App extends Component {
             lon: "",
             error: "",
             forecasts: [],
-            loadProgress: 0
+            loadProgress: 0,
+            isRefreshing: false,
+            modalMessage: ""
         };
 
         this.loadFromStorage();
@@ -78,6 +82,7 @@ class App extends Component {
     }
 
     async fetchWeather() {
+        this.setStateFromKey("forecasts", []);
         this.setStateFromKey("loadProgress", 0.35);
         let lat = parseFloat(this.state.lat);
         let lon = parseFloat(this.state.lon);
@@ -104,9 +109,26 @@ class App extends Component {
         await this.saveLatLonToStorage(this.state.lat, this.state.lon);
     }
 
+    refetchWeather() {
+        this.setStateFromKey("isRefreshing", true);
+        this.fetchWeather().then(() => {
+            this.setStateFromKey("isRefreshing", false);
+        });
+    }
+
     async saveLatLonToStorage(lat, lon) {
         await AsyncStorage.setItem("lat", lat);
         await AsyncStorage.setItem("lon", lon);
+    }
+
+    onInfo() {
+        this.setStateFromKey("modalMessage",
+`BasicWeather by hammy275.
+
+Released under the GNU GPLv3.
+Weather data and images provided by the NWS (NOAA).
+`
+        );
     }
 
     render() {
@@ -115,11 +137,20 @@ class App extends Component {
             <SafeAreaProvider>
                 <PaperProvider style={{container: {flex: 1}}}>
                     <SafeAreaView style={[styles.container, {backgroundColor: theme.colors.background}]}>
+                        <Portal>
+                            <Modal
+                                   contentContainerStyle={{alignSelf: "center", backgroundColor: theme.colors.background, padding: 48}}
+                                visible={this.state.modalMessage !== ""} onDismiss={() => this.setStateFromKey("modalMessage", "")}>
+                                <View>
+                                    <Text style={{textAlign: "center"}} variant="titleSmall">{this.state.modalMessage}</Text>
+                                </View>
+                            </Modal>
+                        </Portal>
                         <LocationHeader setStateFromKey={this.setStateFromKey} lat={this.state.lat} lon={this.state.lon}
-                                        fetchWeather={this.fetchWeather}/>
+                                        fetchWeather={this.fetchWeather} onInfo={this.onInfo}/>
                         <FlatList data={this.state.forecasts} renderItem={(data) => {
                             return <WeatherDescription period={data.item}/>
-                        }}/>
+                        }} refreshControl={<RefreshControl refreshing={this.state.isRefreshing} onRefresh={this.refetchWeather}/>}/>
                         <ErrorFooter errorMessage={this.state.error} style={footerStyle} loadProgress={this.state.loadProgress}/>
                     </SafeAreaView>
                 </PaperProvider>
