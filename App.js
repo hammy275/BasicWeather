@@ -126,7 +126,7 @@ class App extends Component {
 `BasicWeather by hammy275.
 
 Released under the GNU GPLv3.
-Weather data and images provided by the NWS (NOAA).
+Weather data and images provided by the National Weather Service (NOAA).
 `
         );
     }
