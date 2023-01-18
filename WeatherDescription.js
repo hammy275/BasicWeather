@@ -16,7 +16,10 @@ class WeatherDescription extends Component {
                     <ListImage source={{uri: this.props.period.icon}}/>
                     <Text>{this.props.period.temperature + "°" + this.props.period.temperatureUnit}</Text>
                 </View>
-                <Text style={{marginLeft: 4, marginRight: 60}}>{this.props.period.detailedForecast}</Text>
+                <Text style={{marginLeft: 4, marginRight: 60}}>
+                    <Text style={{fontWeight: "bold"}}>{this.props.period.name + ": "}</Text>
+                    {this.props.period.detailedForecast}
+                </Text>
             </View>
         );
     }
